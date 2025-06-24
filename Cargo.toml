@@ -8,6 +8,6 @@ name = "uuid_blake3"
 crate-type = ["cdylib"]
 
 [dependencies]
-uuid = { version = "1.17.0", features = ["v4"] }
+uuid = "1.17.0"
 blake3 = "1.8.2"
 pyo3 = { version = "0.25.1", features = ["abi3-py38", "uuid"] }

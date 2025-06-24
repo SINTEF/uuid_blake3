@@ -14,18 +14,6 @@ const BLAKE3_KEY: [u8; 32] = [
     !0xd4, !0x30, !0xc8,
 ];
 
-/// Formats the sum of two numbers as string.
-#[pyfunction]
-fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
-    Ok((a + b).to_string())
-}
-
-/// Returns a random UUID v4
-#[pyfunction]
-fn random_uuid_v4() -> Uuid {
-    Uuid::new_v4()
-}
-
 /// Computes a hashed UUID.
 #[pyfunction]
 fn uuid(namespace: &str, name: &str) -> Uuid {
@@ -150,9 +138,7 @@ fn uuid_with_metadata(namespace: &str, name: &str, metadata: Bound<'_, PyDict>) 
 /// A Python module implemented in Rust.
 #[pymodule]
 fn uuid_blake3(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(sum_as_string, m)?)?;
-    m.add_function(wrap_pyfunction!(random_uuid_v4, m)?)?;
     m.add_function(wrap_pyfunction!(crate::uuid, m)?)?;
-    m.add_function(wrap_pyfunction!(uuid_with_metadata, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::uuid_with_metadata, m)?)?;
     Ok(())
 }
