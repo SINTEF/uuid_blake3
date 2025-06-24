@@ -147,3 +147,26 @@ def test_uuid_with_metadata_error_cases():
     uuid_custom_repeat = uuid_blake3.uuid_with_metadata(namespace, name, metadata_with_custom)
     assert uuid_custom == uuid_custom_repeat, "Same custom object should produce same UUID"
 
+def test_type_conflicts():
+    namespace = "namespace_a"
+    name = "example_a"
+
+    # Test that None value and "None" string produce different UUIDs
+    metadata_with_none_value = {"test_key": None}
+    metadata_with_none_string = {"test_key": "None"}
+    uuid_none_value = uuid_blake3.uuid_with_metadata(namespace, name, metadata_with_none_value)
+    uuid_none_string = uuid_blake3.uuid_with_metadata(namespace, name, metadata_with_none_string)
+    assert uuid_none_value != uuid_none_string, "None value and 'None' string should produce different UUIDs"
+
+    # Test that empty string and None produce different UUIDs
+    metadata_with_empty_string = {"test_key": ""}
+    uuid_empty_string = uuid_blake3.uuid_with_metadata(namespace, name, metadata_with_empty_string)
+    assert uuid_none_value != uuid_empty_string, "None value and empty string should produce different UUIDs"
+
+    # Test that 0 and False produce different UUIDs
+    metadata_with_zero = {"test_key_a": 0}
+    metadata_with_false = {"test_key_a": False}
+    uuid_zero = uuid_blake3.uuid_with_metadata(namespace, name, metadata_with_zero)
+    uuid_false = uuid_blake3.uuid_with_metadata(namespace, name, metadata_with_false)
+    assert uuid_zero != uuid_false, "0 and False should produce different UUIDs"
+

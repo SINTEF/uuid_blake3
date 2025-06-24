@@ -87,22 +87,40 @@ fn uuid_with_metadata(namespace: &str, name: &str, metadata: Bound<'_, PyDict>) 
 
         buffer.push(31u8); // Unit separator (US) - ASCII 31 (0x1F)
 
-        // Try to extract bytes from the value in different ways
-        if let Ok(bytes) = value.extract::<Vec<u8>>() {
-            // Direct bytes
-            buffer.extend_from_slice(&bytes);
-        } else if let Ok(string_val) = value.extract::<String>() {
-            // String to bytes
-            buffer.extend_from_slice(string_val.as_bytes());
-        } else if let Ok(int_val) = value.extract::<i64>() {
-            // Integer to bytes (little-endian)
-            buffer.extend_from_slice(&int_val.to_le_bytes());
-        } else if let Ok(float_val) = value.extract::<f64>() {
-            // Float to bytes (little-endian)
-            buffer.extend_from_slice(&float_val.to_le_bytes());
-        } else if let Ok(bool_val) = value.extract::<bool>() {
-            // Boolean to bytes
+        // Check Python object type first, then extract
+        if value.is_none() {
+            buffer.push(0u8); // None type
+        } else if value.is_instance_of::<pyo3::types::PyBool>() {
+            // Check bool BEFORE int because bool is a subtype of int in Python
+            let bool_val = value.extract::<bool>().map_err(|_| {
+                PyErr::new::<pyo3::exceptions::PyTypeError, _>("Failed to extract boolean value")
+            })?;
+            buffer.push(1u8); // Boolean type
             buffer.push(if bool_val { 1u8 } else { 0u8 });
+        } else if value.is_instance_of::<pyo3::types::PyBytes>() {
+            let bytes = value.extract::<Vec<u8>>().map_err(|_| {
+                PyErr::new::<pyo3::exceptions::PyTypeError, _>("Failed to extract bytes")
+            })?;
+            buffer.push(2u8); // Bytes type
+            buffer.extend_from_slice(&bytes);
+        } else if value.is_instance_of::<pyo3::types::PyString>() {
+            let string_val = value.extract::<String>().map_err(|_| {
+                PyErr::new::<pyo3::exceptions::PyTypeError, _>("Failed to extract string")
+            })?;
+            buffer.push(3u8); // String type
+            buffer.extend_from_slice(string_val.as_bytes());
+        } else if value.is_instance_of::<pyo3::types::PyInt>() {
+            let int_val = value.extract::<i64>().map_err(|_| {
+                PyErr::new::<pyo3::exceptions::PyTypeError, _>("Failed to extract integer")
+            })?;
+            buffer.push(4u8); // Integer type
+            buffer.extend_from_slice(&int_val.to_le_bytes());
+        } else if value.is_instance_of::<pyo3::types::PyFloat>() {
+            let float_val = value.extract::<f64>().map_err(|_| {
+                PyErr::new::<pyo3::exceptions::PyTypeError, _>("Failed to extract float")
+            })?;
+            buffer.push(5u8); // Float type
+            buffer.extend_from_slice(&float_val.to_le_bytes());
         } else {
             // For any other type, use Python's str() representation
             let str_repr = value.str().map_err(|_| {
@@ -115,6 +133,7 @@ fn uuid_with_metadata(namespace: &str, name: &str, metadata: Bound<'_, PyDict>) 
                     "Failed to extract string representation",
                 )
             })?;
+            buffer.push(6u8); // Custom type
             buffer.extend_from_slice(str_val.as_bytes());
         }
 
